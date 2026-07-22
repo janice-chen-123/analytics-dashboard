@@ -2,7 +2,7 @@
 
 An interactive data analytics platform built with Python and Streamlit. Upload any CSV file to get automated data cleaning, KPI tracking, interactive visualizations, and AI-generated business insights — without sending your raw data to any external service.
 
-**Live Demo:** *(coming soon)*
+**Live Demo:** [da-dashboard.streamlit.app](https://da-dashboard.streamlit.app)
 
 ---
 
