@@ -1,10 +1,10 @@
 """
-data_loader.py — CSV file reading and validation.
+data_loader.py — File reading and validation for CSV and Excel uploads.
 
 Responsibilities:
 - Validate file type and size
-- Read CSV into a DataFrame
-- Detect and handle encoding issues
+- Read CSV or Excel into a DataFrame
+- Detect and handle encoding issues (CSV only)
 - Detect empty files
 - Return structured results so the caller can display clear error messages
 """
@@ -21,12 +21,12 @@ from src.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
 @dataclass
 class LoadResult:
     """
-    Result returned by load_csv().
+    Result returned by load_file().
 
     success: True if the file was loaded without errors.
     df:      The loaded DataFrame (empty DataFrame if success is False).
     error:   Human-readable error message shown to the user.
-    warnings: Non-fatal issues (e.g. some rows had parse problems).
+    warnings: Non-fatal issues (e.g. encoding fallback, multiple sheets).
     """
 
     success: bool
@@ -35,12 +35,13 @@ class LoadResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def load_csv(uploaded_file: st.runtime.uploaded_file_manager.UploadedFile) -> LoadResult:
+def load_file(uploaded_file: st.runtime.uploaded_file_manager.UploadedFile) -> LoadResult:
     """
     Read an uploaded Streamlit file object into a pandas DataFrame.
 
-    Validates file extension and size before reading.
-    Tries UTF-8 first, then falls back to latin-1 for files with special characters.
+    Supports CSV (.csv) and Excel (.xlsx, .xls) files.
+    For CSV: tries UTF-8 encoding first, then falls back to latin-1.
+    For Excel: reads the first sheet; warns if multiple sheets exist.
 
     Args:
         uploaded_file: The object returned by st.file_uploader().
@@ -55,7 +56,10 @@ def load_csv(uploaded_file: st.runtime.uploaded_file_manager.UploadedFile) -> Lo
     if suffix not in ALLOWED_EXTENSIONS:
         return LoadResult(
             success=False,
-            error=f"Unsupported file type '{suffix}'. Please upload a CSV file (.csv).",
+            error=(
+                f"Unsupported file type '{suffix}'. "
+                "Please upload a CSV (.csv) or Excel (.xlsx, .xls) file."
+            ),
         )
 
     # ── Size check ────────────────────────────────────────────────────────────
@@ -74,7 +78,15 @@ def load_csv(uploaded_file: st.runtime.uploaded_file_manager.UploadedFile) -> Lo
     if len(raw_bytes) == 0:
         return LoadResult(success=False, error="The uploaded file is empty.")
 
-    # ── Read CSV ──────────────────────────────────────────────────────────────
+    # ── Route to the correct reader ───────────────────────────────────────────
+    if suffix == ".csv":
+        return _read_csv(raw_bytes)
+    else:
+        return _read_excel(raw_bytes, suffix)
+
+
+def _read_csv(raw_bytes: bytes) -> LoadResult:
+    """Try UTF-8 then latin-1 encoding."""
     warnings: list[str] = []
     df: pd.DataFrame | None = None
 
@@ -114,20 +126,47 @@ def load_csv(uploaded_file: st.runtime.uploaded_file_manager.UploadedFile) -> Lo
             ),
         )
 
-    # ── Post-read validation ──────────────────────────────────────────────────
+    return _validate_df(df, warnings)
+
+
+def _read_excel(raw_bytes: bytes, suffix: str) -> LoadResult:
+    """Read the first sheet of an Excel file."""
+    warnings: list[str] = []
+    try:
+        xl = pd.ExcelFile(io.BytesIO(raw_bytes))
+        if len(xl.sheet_names) > 1:
+            warnings.append(
+                f"This workbook has {len(xl.sheet_names)} sheets "
+                f"({', '.join(str(s) for s in xl.sheet_names)}). "
+                f"Only the first sheet '{xl.sheet_names[0]}' was loaded."
+            )
+        df = xl.parse(xl.sheet_names[0])
+    except Exception as exc:
+        return LoadResult(
+            success=False,
+            error=f"Could not read the Excel file: {exc}. Please verify the file format.",
+        )
+
+    return _validate_df(df, warnings)
+
+
+def _validate_df(df: pd.DataFrame, warnings: list[str]) -> LoadResult:
+    """Shared post-read checks."""
     if df.empty:
         return LoadResult(
             success=False,
-            error="The CSV file contains column headers but no data rows.",
+            error="The file contains column headers but no data rows.",
         )
-
     if len(df.columns) == 1:
         warnings.append(
-            "Only one column was detected. If your file uses a semicolon (;) or tab "
+            "Only one column was detected. If your CSV uses a semicolon (;) or tab "
             "as a separator, it may not have been parsed correctly."
         )
-
     return LoadResult(success=True, df=df, warnings=warnings)
+
+
+# keep old name as alias so any future callers aren't broken
+load_csv = load_file
 
 
 @st.cache_data(show_spinner=False)

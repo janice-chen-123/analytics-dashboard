@@ -161,8 +161,8 @@ def render_sidebar_upload() -> None:
         st.subheader("📁 Upload Data")
 
         uploaded_file = st.file_uploader(
-            label="Choose a CSV file",
-            type=["csv"],
+            label="Choose a CSV or Excel file",
+            type=["csv", "xlsx", "xls"],
             help=f"Maximum file size: {MAX_FILE_SIZE_MB} MB",
         )
 

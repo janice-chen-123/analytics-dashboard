@@ -13,12 +13,12 @@ load_dotenv()
 
 # ── App metadata ──────────────────────────────────────────────────────────────
 APP_TITLE = "AI Data Analyst Dashboard"
-APP_SUBTITLE = "Upload a CSV, explore your data, and get AI-generated business insights."
+APP_SUBTITLE = "Upload a CSV or Excel file, explore your data, and get AI-generated business insights."
 APP_VERSION = "1.0.0"
 
 # ── File upload limits ────────────────────────────────────────────────────────
 MAX_FILE_SIZE_MB = 50
-ALLOWED_EXTENSIONS = [".csv"]
+ALLOWED_EXTENSIONS = [".csv", ".xlsx", ".xls"]
 
 # ── SQLite ────────────────────────────────────────────────────────────────────
 DATABASE_PATH = "database/analytics.db"
