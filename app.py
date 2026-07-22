@@ -765,7 +765,7 @@ def render_ai_section() -> None:
     report = st.session_state.get("ai_report")
     if report:
         st.markdown("---")
-        st.markdown(report)
+        st.markdown(report.replace("$", r"\$"))
         generated_at = st.session_state.get("ai_report_context", {}).get(
             "generated_at", ""
         )
