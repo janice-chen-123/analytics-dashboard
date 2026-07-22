@@ -15,7 +15,7 @@ import streamlit as st
 
 from src.config import APP_TITLE, APP_SUBTITLE, APP_VERSION, MAX_FILE_SIZE_MB
 from src.data_loader import load_csv, get_file_summary
-from src.data_cleaning import clean_dataframe
+from src.data_cleaning import clean_dataframe, CleaningOptions
 from src.data_quality import generate_quality_report, get_quality_summary
 from src.filters import (
     get_numeric_columns,
@@ -92,6 +92,8 @@ def init_session_state() -> None:
         "clean_changes": [],
         "db_saved": False,
         "db_row_count": 0,
+        "clean_result": None,
+        "last_cleaning_options": None,
         # Widget state for column selector dropdowns (managed via key=)
         "sel_date": "— None —",
         "sel_category": "— None —",
@@ -106,24 +108,65 @@ def init_session_state() -> None:
             st.session_state[key] = value
 
 
-def ensure_cleaned_df() -> None:
-    """Run cleaning once after a new file is loaded, then persist to SQLite."""
-    if (
-        st.session_state["df_raw"] is not None
-        and st.session_state["df_clean"] is None
-    ):
-        result = clean_dataframe(st.session_state["df_raw"])
-        st.session_state["df_clean"] = result.cleaned_df
-        st.session_state["clean_changes"] = result.changes
+def _get_cleaning_options() -> CleaningOptions:
+    """Build CleaningOptions from current sidebar widget values."""
+    fill_numeric_map = {
+        "Keep as-is": "none",
+        "Fill with Mean": "mean",
+        "Fill with Median": "median",
+        "Fill with Zero": "zero",
+    }
+    fill_text_map = {
+        "Keep as-is": "none",
+        "Fill with Most Common": "mode",
+        'Fill with "Unknown"': "unknown",
+    }
+    return CleaningOptions(
+        fill_numeric=fill_numeric_map.get(
+            st.session_state.get("clean_fill_numeric", "Keep as-is"), "none"
+        ),
+        fill_text=fill_text_map.get(
+            st.session_state.get("clean_fill_text", "Keep as-is"), "none"
+        ),
+        remove_outliers=st.session_state.get("clean_remove_outliers", False),
+        outlier_threshold=st.session_state.get("clean_outlier_mult", 1.5),
+    )
 
-        # Persist cleaned data to SQLite (silent — errors shown in sidebar status)
-        try:
-            db_save(result.cleaned_df)
-            st.session_state["db_saved"] = True
-            st.session_state["db_row_count"] = len(result.cleaned_df)
-        except Exception:
-            st.session_state["db_saved"] = False
-            st.session_state["db_row_count"] = 0
+
+def ensure_cleaned_df() -> None:
+    """Run cleaning when a new file is loaded or cleaning options change."""
+    if st.session_state["df_raw"] is None:
+        return
+
+    options = _get_cleaning_options()
+    last_options = st.session_state.get("last_cleaning_options")
+    needs_clean = (
+        st.session_state["df_clean"] is None
+        or last_options != options.__dict__
+    )
+
+    if not needs_clean:
+        return
+
+    result = clean_dataframe(st.session_state["df_raw"], options)
+    st.session_state["df_clean"] = result.cleaned_df
+    st.session_state["clean_changes"] = result.changes
+    st.session_state["clean_result"] = result
+    st.session_state["last_cleaning_options"] = options.__dict__
+
+    # Reset dependent state when data changes
+    st.session_state["df_filtered"] = None
+    st.session_state["ai_report"] = None
+    st.session_state["ai_report_context"] = None
+
+    # Persist cleaned data to SQLite
+    try:
+        db_save(result.cleaned_df)
+        st.session_state["db_saved"] = True
+        st.session_state["db_row_count"] = len(result.cleaned_df)
+    except Exception:
+        st.session_state["db_saved"] = False
+        st.session_state["db_row_count"] = 0
 
 
 # ── Header ────────────────────────────────────────────────────────────────────
@@ -219,6 +262,47 @@ def render_sidebar_upload() -> None:
             )
         else:
             st.caption("💾 Database: not saved yet.")
+
+
+def render_sidebar_cleaning() -> None:
+    """Sidebar section for user-configurable data cleaning options."""
+    with st.sidebar:
+        st.markdown("---")
+        with st.expander("🧹 Cleaning Options", expanded=False):
+            st.caption(
+                "These steps run after the baseline cleaning "
+                "(column rename, dedup, whitespace strip)."
+            )
+
+            st.selectbox(
+                "Numeric missing values",
+                options=["Keep as-is", "Fill with Mean", "Fill with Median", "Fill with Zero"],
+                key="clean_fill_numeric",
+                help="Applied to all numeric columns.",
+            )
+
+            st.selectbox(
+                "Text missing values",
+                options=["Keep as-is", "Fill with Most Common", 'Fill with "Unknown"'],
+                key="clean_fill_text",
+                help="Applied to all text/categorical columns.",
+            )
+
+            st.checkbox(
+                "Remove outliers (IQR method)",
+                key="clean_remove_outliers",
+                help="Removes rows where a numeric value falls outside Q1 − k×IQR or Q3 + k×IQR.",
+            )
+            if st.session_state.get("clean_remove_outliers"):
+                st.slider(
+                    "IQR multiplier",
+                    min_value=1.0,
+                    max_value=3.0,
+                    value=1.5,
+                    step=0.5,
+                    key="clean_outlier_mult",
+                    help="1.5 = standard (more rows removed). 3.0 = loose (fewer rows removed).",
+                )
 
 
 def render_sidebar_col_config(df: pd.DataFrame) -> None:
@@ -463,6 +547,30 @@ def render_data_preview() -> None:
     c2.metric("Rows (cleaned)", f"{len(df_clean):,}" if df_clean is not None else "—")
     c3.metric("Rows (filtered)", f"{len(df_filtered):,}" if df_filtered is not None else "—")
     c4.metric("Columns", summary["col_count"])
+
+    # ── Cleaning summary ──────────────────────────────────────────────────────
+    clean_result = st.session_state.get("clean_result")
+    if clean_result is not None:
+        with st.expander("🧹 Cleaning Summary", expanded=False):
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Rows Before", f"{clean_result.rows_before:,}")
+            m2.metric("Rows After", f"{clean_result.rows_after:,}",
+                      delta=f"{clean_result.rows_after - clean_result.rows_before:+,}")
+            m3.metric("Missing Before", f"{clean_result.missing_before:,}")
+            m4.metric("Missing After", f"{clean_result.missing_after:,}",
+                      delta=f"{clean_result.missing_after - clean_result.missing_before:+,}")
+
+            if not clean_result.missing_by_col.empty:
+                st.markdown("**Missing values by column**")
+                st.dataframe(
+                    clean_result.missing_by_col,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+            st.markdown("**Steps applied**")
+            for change in clean_result.changes:
+                st.markdown(f"- {change}")
 
     tab_raw, tab_clean, tab_filtered, tab_cols = st.tabs(
         ["Raw Data", "Cleaned Data", "Filtered Data", "Column Info"]
@@ -830,6 +938,7 @@ def main() -> None:
         render_no_file_state()
         return
 
+    render_sidebar_cleaning()
     ensure_cleaned_df()
 
     df_clean = st.session_state["df_clean"]
