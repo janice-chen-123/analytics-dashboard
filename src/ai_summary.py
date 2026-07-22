@@ -230,7 +230,7 @@ def generate_ai_summary(
                 {"role": "user",   "content": user_prompt},
             ],
             max_tokens=max_tokens,
-            temperature=0.3,   # lower temperature → more factual, less creative
+            temperature=0.3,
         )
         return response.choices[0].message.content.strip()
 
