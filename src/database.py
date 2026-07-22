@@ -108,6 +108,27 @@ def run_query(
         return pd.read_sql_query(sql, conn)
 
 
+def load_table(
+    table_name: str,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> pd.DataFrame:
+    """
+    Load an entire SQLite table as a DataFrame.
+
+    Args:
+        table_name: Name of the table to load.
+        db_path:    Path to the SQLite file.
+
+    Returns:
+        DataFrame with all rows from the table.
+
+    Raises:
+        FileNotFoundError: If the database does not exist.
+        UnsafeSQLError: Delegates to run_query for safety.
+    """
+    return run_query(f'SELECT * FROM "{table_name}"', db_path=db_path)
+
+
 def get_table_info(
     table_name: str = DEFAULT_TABLE,
     db_path: Path = DEFAULT_DB_PATH,

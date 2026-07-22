@@ -25,6 +25,15 @@ from src.filters import (
 )
 from src.analytics import calculate_kpis
 from src.database import save_dataframe as db_save, DEFAULT_DB_PATH, DEFAULT_TABLE
+from src.join_manager import (
+    execute_join,
+    load_and_join_sqlite,
+    get_sqlite_tables,
+    get_table_columns,
+    sanitize_table_name,
+    JOIN_TYPE_OPTIONS,
+    JoinError,
+)
 from src.ai_summary import (
     build_analysis_context,
     generate_ai_summary,
@@ -94,6 +103,12 @@ def init_session_state() -> None:
         "db_row_count": 0,
         "clean_result": None,
         "last_cleaning_options": None,
+        "df_raw_2": None,
+        "file_name_2": None,
+        "df_joined": None,
+        "join_active": False,
+        "join_config": {},
+        "last_join_active": None,
         # Widget state for column selector dropdowns (managed via key=)
         "sel_date": "— None —",
         "sel_category": "— None —",
@@ -140,19 +155,27 @@ def ensure_cleaned_df() -> None:
 
     options = _get_cleaning_options()
     last_options = st.session_state.get("last_cleaning_options")
+    join_active = st.session_state.get("join_active", False)
     needs_clean = (
         st.session_state["df_clean"] is None
         or last_options != options.__dict__
+        or st.session_state.get("last_join_active") != join_active
     )
 
     if not needs_clean:
         return
 
-    result = clean_dataframe(st.session_state["df_raw"], options)
+    source_df = (
+        st.session_state["df_joined"]
+        if join_active and st.session_state.get("df_joined") is not None
+        else st.session_state["df_raw"]
+    )
+    result = clean_dataframe(source_df, options)
     st.session_state["df_clean"] = result.cleaned_df
     st.session_state["clean_changes"] = result.changes
     st.session_state["clean_result"] = result
     st.session_state["last_cleaning_options"] = options.__dict__
+    st.session_state["last_join_active"] = join_active
 
     # Reset dependent state when data changes
     st.session_state["df_filtered"] = None
@@ -303,6 +326,194 @@ def render_sidebar_cleaning() -> None:
                     key="clean_outlier_mult",
                     help="1.5 = standard (more rows removed). 3.0 = loose (fewer rows removed).",
                 )
+
+
+def render_sidebar_join() -> None:
+    """Sidebar section for joining two files or two SQLite tables."""
+    with st.sidebar:
+        st.markdown("---")
+        with st.expander("🔗 Join Tables", expanded=False):
+            join_mode = st.radio(
+                "Join mode",
+                ["File Join", "SQLite Join"],
+                horizontal=True,
+                key="join_mode",
+            )
+
+            join_type_label = st.selectbox(
+                "Join type",
+                options=list(JOIN_TYPE_OPTIONS.keys()),
+                key="join_type_label",
+            )
+            how = JOIN_TYPE_OPTIONS[join_type_label]
+
+            if join_mode == "File Join":
+                _render_file_join_ui(how)
+            else:
+                _render_sqlite_join_ui(how)
+
+            # Reset button
+            if st.session_state.get("join_active"):
+                if st.button("✖ Reset Join", use_container_width=True):
+                    st.session_state.update({
+                        "df_raw_2": None,
+                        "file_name_2": None,
+                        "df_joined": None,
+                        "join_active": False,
+                        "join_config": {},
+                        "df_clean": None,
+                        "ai_report": None,
+                        "ai_report_context": None,
+                    })
+                    st.rerun()
+
+
+def _render_file_join_ui(how: str) -> None:
+    """File join sub-UI — upload second file and configure join keys."""
+    df_raw = st.session_state.get("df_raw")
+
+    uploaded2 = st.file_uploader(
+        "Upload second file",
+        type=["csv", "xlsx", "xls"],
+        key="file_uploader_2",
+        help="This file will be joined with the primary uploaded file.",
+    )
+
+    if uploaded2 is not None and st.session_state.get("file_name_2") != uploaded2.name:
+        from src.data_loader import load_file
+        result2 = load_file(uploaded2)
+        if result2.success:
+            st.session_state["df_raw_2"] = result2.df
+            st.session_state["file_name_2"] = uploaded2.name
+        else:
+            st.error(f"❌ {result2.error}")
+            st.session_state["df_raw_2"] = None
+
+    df2 = st.session_state.get("df_raw_2")
+    if df_raw is None or df2 is None:
+        st.caption("Upload a second file to configure the join.")
+        return
+
+    left_cols = df_raw.columns.tolist()
+    right_cols = df2.columns.tolist()
+
+    left_key = st.selectbox("Left key (primary file)", left_cols, key="join_left_key")
+    right_key = st.selectbox(
+        f"Right key ({st.session_state.get('file_name_2', 'second file')})",
+        right_cols,
+        key="join_right_key",
+    )
+
+    if st.button("▶ Apply File Join", use_container_width=True):
+        try:
+            joined = execute_join(df_raw, df2, how, left_key, right_key)
+            st.session_state.update({
+                "df_joined": joined,
+                "join_active": True,
+                "join_config": {
+                    "mode": "file",
+                    "how": how,
+                    "left_key": left_key,
+                    "right_key": right_key,
+                    "left_file": st.session_state.get("file_name"),
+                    "right_file": st.session_state.get("file_name_2"),
+                    "rows": len(joined),
+                    "cols": len(joined.columns),
+                },
+                "df_clean": None,
+                "ai_report": None,
+                "ai_report_context": None,
+            })
+            # Save second file to SQLite for SQLite join mode
+            try:
+                table2_name = sanitize_table_name(st.session_state.get("file_name_2", "file2"))
+                db_save(df2, table_name=table2_name)
+            except Exception:
+                pass
+            st.rerun()
+        except JoinError as exc:
+            st.error(f"❌ Join failed: {exc}")
+
+
+def _render_sqlite_join_ui(how: str) -> None:
+    """SQLite join sub-UI — select two tables from the database."""
+    tables = get_sqlite_tables(DEFAULT_DB_PATH)
+    if len(tables) < 2:
+        st.caption(
+            "At least 2 tables are needed. Upload a primary file, apply a File Join "
+            "with a second file, then switch to SQLite Join mode."
+        )
+        return
+
+    table1 = st.selectbox("Left table", tables, key="sql_table1")
+    table2 = st.selectbox("Right table", [t for t in tables if t != table1], key="sql_table2")
+
+    try:
+        cols1 = get_table_columns(table1, DEFAULT_DB_PATH)
+        cols2 = get_table_columns(table2, DEFAULT_DB_PATH)
+    except JoinError as exc:
+        st.error(str(exc))
+        return
+
+    left_key = st.selectbox(f"Key from '{table1}'", cols1, key="sql_left_key")
+    right_key = st.selectbox(f"Key from '{table2}'", cols2, key="sql_right_key")
+
+    if st.button("▶ Apply SQLite Join", use_container_width=True):
+        try:
+            joined = load_and_join_sqlite(table1, table2, how, left_key, right_key, DEFAULT_DB_PATH)
+            st.session_state.update({
+                "df_joined": joined,
+                "join_active": True,
+                "join_config": {
+                    "mode": "sqlite",
+                    "how": how,
+                    "left_key": left_key,
+                    "right_key": right_key,
+                    "left_table": table1,
+                    "right_table": table2,
+                    "rows": len(joined),
+                    "cols": len(joined.columns),
+                },
+                "df_clean": None,
+                "ai_report": None,
+                "ai_report_context": None,
+            })
+            st.rerun()
+        except (JoinError, FileNotFoundError) as exc:
+            st.error(f"❌ {exc}")
+
+
+def render_join_preview() -> None:
+    """Show a summary of the active join and a preview of the joined data."""
+    if not st.session_state.get("join_active"):
+        return
+
+    cfg = st.session_state.get("join_config", {})
+    df_joined = st.session_state.get("df_joined")
+
+    st.markdown("## 🔗 Join Preview")
+
+    mode = cfg.get("mode", "")
+    how = cfg.get("how", "")
+    if mode == "file":
+        st.info(
+            f"**{how.title()} join** · "
+            f"`{cfg.get('left_file')}` × `{cfg.get('right_file')}` "
+            f"on `{cfg.get('left_key')}` = `{cfg.get('right_key')}` → "
+            f"**{cfg.get('rows'):,} rows, {cfg.get('cols')} columns**"
+        )
+    else:
+        st.info(
+            f"**{how.title()} join** · "
+            f"SQLite `{cfg.get('left_table')}` × `{cfg.get('right_table')}` "
+            f"on `{cfg.get('left_key')}` = `{cfg.get('right_key')}` → "
+            f"**{cfg.get('rows'):,} rows, {cfg.get('cols')} columns**"
+        )
+
+    if df_joined is not None:
+        st.dataframe(df_joined.head(20), use_container_width=True)
+
+    st.markdown("---")
 
 
 def render_sidebar_col_config(df: pd.DataFrame) -> None:
@@ -939,6 +1150,7 @@ def main() -> None:
         return
 
     render_sidebar_cleaning()
+    render_sidebar_join()
     ensure_cleaned_df()
 
     df_clean = st.session_state["df_clean"]
@@ -950,6 +1162,7 @@ def main() -> None:
     render_sidebar_filters(df_clean)
 
     # Main page sections
+    render_join_preview()
     render_data_preview()
     render_data_quality()
     render_kpi_section()
