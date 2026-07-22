@@ -48,6 +48,34 @@ st.set_page_config(
 )
 
 
+# ── Cached computation wrappers ───────────────────────────────────────────────
+# col_config is a dict (not hashable), so we pass it as a sorted tuple of items.
+
+@st.cache_data
+def _cached_kpis(df: pd.DataFrame, cfg_items: tuple):
+    return calculate_kpis(df, dict(cfg_items))
+
+@st.cache_data
+def _cached_chart_sales_by_category(df: pd.DataFrame, category_col, sales_col):
+    return chart_sales_by_category(df, category_col, sales_col)
+
+@st.cache_data
+def _cached_chart_profit_by_region(df: pd.DataFrame, region_col, profit_col):
+    return chart_profit_by_region(df, region_col, profit_col)
+
+@st.cache_data
+def _cached_chart_monthly_sales_trend(df: pd.DataFrame, date_col, sales_col):
+    return chart_monthly_sales_trend(df, date_col, sales_col)
+
+@st.cache_data
+def _cached_chart_profit_vs_sales(df: pd.DataFrame, sales_col, profit_col, category_col):
+    return chart_profit_vs_sales(df, sales_col, profit_col, category_col)
+
+@st.cache_data
+def _cached_chart_top_categories(df: pd.DataFrame, category_col, sales_col):
+    return chart_top_categories(df, category_col, sales_col)
+
+
 # ── Session state ─────────────────────────────────────────────────────────────
 
 def init_session_state() -> None:
@@ -533,7 +561,7 @@ def render_kpi_section() -> None:
         st.warning("No data matches the current filter selection — KPIs cannot be computed.")
         return
 
-    kpi = calculate_kpis(df_filtered, cfg)
+    kpi = _cached_kpis(df_filtered, tuple(sorted(cfg.items())))
 
     # ── Row 1: Financial metrics ──────────────────────────────────────────────
     c1, c2, c3, c4 = st.columns(4)
@@ -604,21 +632,21 @@ def render_visual_analysis() -> None:
     col_a, col_b = st.columns(2)
 
     with col_a:
-        fig1 = chart_sales_by_category(df_filtered, category_col, sales_col)
+        fig1 = _cached_chart_sales_by_category(df_filtered, category_col, sales_col)
         if fig1:
             st.plotly_chart(fig1, use_container_width=True)
         else:
             st.info("Configure **Category** and **Sales** columns to see this chart.")
 
     with col_b:
-        fig2 = chart_profit_by_region(df_filtered, region_col, profit_col)
+        fig2 = _cached_chart_profit_by_region(df_filtered, region_col, profit_col)
         if fig2:
             st.plotly_chart(fig2, use_container_width=True)
         else:
             st.info("Configure **Region** and **Profit** columns to see this chart.")
 
     # ── Row 2: Monthly trend (full width) ─────────────────────────────────────
-    fig3 = chart_monthly_sales_trend(df_filtered, date_col, sales_col)
+    fig3 = _cached_chart_monthly_sales_trend(df_filtered, date_col, sales_col)
     if fig3:
         st.plotly_chart(fig3, use_container_width=True)
     else:
@@ -634,14 +662,14 @@ def render_visual_analysis() -> None:
     col_c, col_d = st.columns(2)
 
     with col_c:
-        fig4 = chart_profit_vs_sales(df_filtered, sales_col, profit_col, category_col)
+        fig4 = _cached_chart_profit_vs_sales(df_filtered, sales_col, profit_col, category_col)
         if fig4:
             st.plotly_chart(fig4, use_container_width=True)
         else:
             st.info("Configure **Sales** and **Profit** columns to see this scatter plot.")
 
     with col_d:
-        fig5 = chart_top_categories(df_filtered, category_col, sales_col)
+        fig5 = _cached_chart_top_categories(df_filtered, category_col, sales_col)
         if fig5:
             st.plotly_chart(fig5, use_container_width=True)
         else:
