@@ -1,6 +1,6 @@
 # AI Data Analyst Dashboard
 
-An interactive data analytics platform built with Python and Streamlit. Upload any CSV file to get automated data cleaning, KPI tracking, interactive visualizations, and AI-generated business insights — without sending your raw data to any external service.
+An interactive data analytics platform built with Python and Streamlit. Upload any CSV or Excel file to get automated data cleaning, KPI tracking, interactive visualizations, and AI-generated business insights — without sending your raw data to any external service.
 
 **Live Demo:** [da-dashboard.streamlit.app](https://da-dashboard.streamlit.app)
 
@@ -8,8 +8,9 @@ An interactive data analytics platform built with Python and Streamlit. Upload a
 
 ## Features
 
-- **CSV Upload & Validation** — file type, size, encoding, and empty-file checks
-- **Automated Data Cleaning** — column name normalization, duplicate removal, whitespace stripping
+- **CSV & Excel Upload** — supports `.csv`, `.xlsx`, and `.xls`; validates file type, size, and encoding; multi-sheet Excel loads the first sheet with a warning
+- **Configurable Data Cleaning** — column name normalization, duplicate removal, whitespace stripping; user-selectable options for filling missing values (mean / median / zero / most common / "Unknown") and outlier removal (IQR method)
+- **Before/After Cleaning Summary** — row count, missing value count, and per-column breakdown before and after cleaning
 - **Data Quality Report** — per-column missing values, unique counts, and data types
 - **Flexible Column Mapping** — map your column names to roles (Sales, Profit, Date, etc.) via the sidebar
 - **KPI Dashboard** — Total Sales, Total Profit, Profit Margin, Avg Order Value, Unique Orders, Total Quantity
@@ -23,7 +24,7 @@ An interactive data analytics platform built with Python and Streamlit. Upload a
 
 ## Tech Stack
 
-Python · Streamlit · pandas · Plotly · SQLite · OpenAI API · pytest
+Python · Streamlit · pandas · Plotly · SQLite · OpenAI API · openpyxl · pytest
 
 ---
 
@@ -34,15 +35,15 @@ ai-data-analyst-dashboard/
 ├── app.py                        # Streamlit entry point
 ├── src/
 │   ├── config.py                 # Constants and API key management
-│   ├── data_loader.py            # CSV validation and loading
-│   ├── data_cleaning.py          # Conservative cleaning pipeline
+│   ├── data_loader.py            # CSV and Excel validation and loading
+│   ├── data_cleaning.py          # Configurable cleaning pipeline
 │   ├── data_quality.py           # Per-column quality report
 │   ├── filters.py                # Column helpers and filter logic
 │   ├── analytics.py              # KPI calculation
 │   ├── visualizations.py         # Plotly chart builders
 │   ├── database.py               # SQLite persistence layer
 │   └── ai_summary.py             # Context builder and OpenAI integration
-├── tests/                        # 120 pytest cases
+├── tests/                        # 140 pytest cases
 ├── data/sample_sales.csv         # Demo dataset
 └── scripts/generate_sample_data.py
 ```
@@ -66,7 +67,7 @@ streamlit run app.py
 ```
 
 ```bash
-pytest   # 120 tests
+pytest   # 140 tests
 ```
 
 ---
