@@ -1,0 +1,84 @@
+order_id,order_date,category,sub_category,region,sales,profit,quantity,discount
+ORD-10000,2024-04-13,Technology,Phones,Central,1552.43,198.71,9.0,0.0
+ORD-10001,2024-06-16,Office Supplies,Binders,East,1400.79,-164.67,11.0,0.3
+ORD-10002,2023-03-11,Sports,Equipment,South,1527.06,204.91,10.0,0.0
+ORD-10003,2024-05-21,Technology,Phones,West,911.76,204.21,4.0,0.0
+ORD-10004,2023-08-31,Sports,Equipment,West,1294.85,-43.56,11.0,0.3
+ORD-10005,2023-02-04,Sports,Accessories,West,469.93,-70.49,17.0,0.5
+ORD-10006,2024-02-18,Sports,Footwear,East,1658.71,-418.82,4.0,0.5
+ORD-10007,2024-05-02,Office Supplies,Labels,Central,721.96,202.96,9.0,0.0
+ORD-10008,2023-09-12,Office Supplies,Binders,Central,1561.2,315.98,7.0,0.0
+ORD-10009,2024-01-08,Technology,Tablets,East,106.73,,15.0,0.0
+ORD-10010,2023-06-27,Furniture,Bookcases,East,1494.63,-209.73,8.0,0.3
+ORD-10011,2023-04-14,Clothing,Shirts,South,753.51,211.58,16.0,0.0
+ORD-10012,2023-05-04,Sports,Footwear,Central,277.24,-55.45,7.0,0.5
+ORD-10013,2024-03-30,Office Supplies,Paper,East,1346.23,23.1,4.0,0.3
+ORD-10014,2024-03-30,Office Supplies,Pens,East,1406.52,-214.98,15.0,0.5
+ORD-10015,2023-06-07,Office Supplies,Paper,South,1613.43,364.37,18.0,0.0
+ORD-10016,2023-04-20,Clothing,Outerwear,West,1371.34,358.17,16.0,0.0
+ORD-10017,2023-12-30,Furniture,Tables,Central,34.58,-3.65,15.0,0.3
+ORD-10018,2023-09-08,Technology,Laptops,West,1416.23,232.29,11.0,0.0
+ORD-10019,2023-03-04,Clothing,Bags,Central,1146.11,-4.31,5.0,0.3
+ORD-10020,2023-11-05,Sports,Apparel,Central,1343.44,-270.82,17.0,0.5
+ORD-10021,2023-10-30,Technology,Laptops,East,1534.7,-325.15,11.0,0.5
+ORD-10022,2023-01-17,Furniture,Frames,Central,1127.23,179.98,12.0,0.0
+ORD-10023,2023-08-12,Office Supplies,Pens,West,884.7,20.26,6.0,0.3
+ORD-10024,2023-02-01,Clothing,Bags,South,1709.74,330.55,16.0,0.0
+ORD-10025,2023-12-28,Furniture,Tables,West,577.14,-65.15,9.0,0.3
+ORD-10026,2023-12-29,Sports,Footwear,South,1122.92,-2.33,19.0,0.2
+ORD-10027,2023-04-02,Clothing,Outerwear,West,824.65,225.0,7.0,0.0
+ORD-10028,2024-01-30,Sports,Accessories,East,64.97,-17.48,15.0,0.5
+ORD-10029,2023-10-01,Technology,Phones,West,934.52,-78.0,18.0,0.3
+ORD-10030,2023-09-01,Office Supplies,Labels,East,321.58,52.2,10.0,0.1
+ORD-10031,2023-12-11,Clothing,Bags,Central,774.42,53.31,13.0,0.2
+ORD-10032,2023-03-06,Technology,Phones,Central,736.39,-215.29,7.0,0.5
+ORD-10033,2024-01-18,Furniture,Chairs,Central,1924.56,115.45,10.0,0.1
+ORD-10034,2024-03-01,Office Supplies,Labels,East,546.42,24.57,6.0,0.3
+ORD-10035,2023-05-29,Furniture,Tables,East,1439.44,-470.24,15.0,0.5
+ORD-10036,2023-09-06,Furniture,Tables,West,210.85,21.73,3.0,0.0
+ORD-10037,2023-11-13,Office Supplies,Paper,Central,420.68,68.03,16.0,0.1
+ORD-10038,2024-02-19,Technology,Phones,Central,370.01,-108.15,1.0,0.5
+ORD-10039,2023-12-09,Furniture,Tables,East,1444.54,190.15,6.0,0.0
+ORD-10040,2023-02-16,Sports,Equipment,East,1176.51,-119.97,12.0,0.3
+ORD-10041,2023-09-27,Clothing,Shirts,West,843.3,220.1,4.0,0.0
+ORD-10042,2023-02-26,Clothing,Shoes,Central,673.13,72.59,13.0,0.2
+ORD-10043,2024-05-20,Sports,Accessories,West,1183.54,-49.69,6.0,0.2
+ORD-10044,2023-11-19,Office Supplies,Pens,South,1170.5,-103.98,12.0,0.3
+ORD-10045,2023-09-21,Furniture,Frames,South,65.15,3.03,8.0,0.0
+ORD-10046,2023-09-23,Office Supplies,Binders,East,1569.82,411.15,6.0,0.0
+ORD-10047,2023-11-09,Technology,Laptops,West,991.6,199.03,4.0,0.0
+ORD-10048,2023-07-01,Technology,Phones,West,957.51,185.17,19.0,0.0
+ORD-10049,2023-01-12,Technology,Accessories,East,1050.93,-11.14,6.0,0.2
+ORD-10050,2023-03-18,Office Supplies,Pens,South,1656.06,377.34,11.0,
+ORD-10051,2024-01-03,Sports,Apparel,South,1116.99,74.02,13.0,0.0
+ORD-10052,2024-02-01,Clothing,Bags,West,576.84,152.31,14.0,0.0
+ORD-10053,2024-05-15,Technology,Tablets,Central,1541.92,229.96,12.0,0.1
+ORD-10054,2023-10-30,Clothing,Bags,East,475.82,-18.2,3.0,0.3
+ORD-10055,2024-03-17,Technology,Phones,South,754.43,-76.25,9.0,0.3
+ORD-10056,2023-06-08,Furniture,Chairs,West,647.94,107.93,13.0,0.0
+ORD-10057,2024-05-26,Office Supplies,Labels,West,1039.81,143.45,,0.1
+ORD-10058,2023-08-26,Office Supplies,Pens,South,345.92,68.23,6.0,0.0
+ORD-10059,2024-02-13,Technology,Tablets,East,1984.9,374.41,2.0,0.0
+ORD-10060,2023-10-11,Sports,Equipment,East,1783.77,,3.0,0.5
+ORD-10061,2023-12-28,Office Supplies,Binders,South,645.54,97.46,7.0,0.1
+ORD-10062,2024-02-12,Clothing,Shoes,South,759.84,206.25,14.0,0.0
+ORD-10063,2023-05-12,Office Supplies,Labels,East,539.67,42.51,19.0,0.1
+ORD-10064,2023-03-25,Furniture,Frames,Central,263.06,,17.0,0.1
+ORD-10065,2024-04-22,Sports,Accessories,West,374.95,83.64,14.0,0.0
+ORD-10066,2024-02-29,Furniture,Tables,East,408.94,-34.65,19.0,0.2
+ORD-10067,2023-03-20,Sports,Equipment,Central,1944.22,291.14,9.0,0.0
+ORD-10068,2023-03-13,Technology,Tablets,West,47.59,11.92,6.0,0.0
+ORD-10069,2023-10-04,Sports,Equipment,West,1361.76,64.67,6.0,0.0
+ORD-10070,2023-04-20,Sports,Equipment,West,1394.64,12.63,8.0,0.1
+ORD-10071,2024-02-08,Technology,Laptops,East,1612.17,106.07,2.0,0.2
+ORD-10072,2023-06-14,Technology,Tablets,Central,279.49,43.54,19.0,0.0
+ORD-10073,2024-06-05,Office Supplies,Pens,West,987.4,243.79,6.0,0.0
+ORD-10074,2023-01-14,Clothing,Shoes,Central,587.16,79.39,10.0,0.1
+ORD-10075,2023-02-27,Furniture,Chairs,East,1119.29,54.65,16.0,0.1
+ORD-10076,2024-06-11,Sports,Equipment,East,297.87,0.42,1.0,0.2
+ORD-10077,2024-03-15,Office Supplies,Pens,West,1200.16,212.83,15.0,0.0
+ORD-10078,2023-01-10,Technology,Laptops,Central,945.42,142.25,17.0,0.0
+ORD-10079,2024-03-11,Office Supplies,Labels,Central,236.11,5.56,5.0,0.2
+ORD-10002,2023-03-11,Sports,Equipment,South,1527.06,204.91,10.0,0.0
+ORD-10007,2024-05-02,Office Supplies,Labels,Central,721.96,202.96,9.0,0.0
+ORD-10015,2023-06-07,Office Supplies,Paper,South,1613.43,364.37,18.0,0.0

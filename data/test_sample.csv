@@ -1,0 +1,4 @@
+order_id,order_date,category,region,sales,profit,quantity
+A001,2024-01-15,Tech,East,1200.5,300.0,2
+A002,2024-02-20,Furniture,West,850.0,-50.0,1
+A003,2024-03-05,Tech,East,2100.75,420.5,3
